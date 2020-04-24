@@ -15,8 +15,12 @@
 /**
  * @typedef {Object} NoteOccurrence
  * @property {string} part
- * @property {number} measure
+ * @property {number} [measure]
  * @property {Note} note
+ */
+
+/**
+ * @typedef {NoteOccurrence[]} PatternOccurrence
  */
 
 /**
@@ -43,19 +47,33 @@ const readXML = (filename, callback) => {
 const isNumeric = (n) => !isNaN(parseFloat(n)) && isFinite(n);
 
 /**
- * Returns the unique value of a given HTMLCollection.
+ * Returns the unique element of a given HTMLCollection.
  *
- * @param {Document} html
- * @param {boolean} [htmlOnly=false]
- * @returns {string | number | Element}
+ * @param {HTMLCollectionOf<Element>} html
+ * @returns {Element}
  */
-const getUnique = (html, htmlOnly = false) => {
-  if (html.length === 1) {
-    if (htmlOnly) return html[0];
+const getUniqueElement = (html) => (html.length === 1 ? html[0] : undefined);
 
-    const value = html[0].innerHTML;
-    return isNumeric(value) ? parseInt(value) : value;
-  }
+/**
+ * Returns the unique string value of a given HTMLCollection.
+ *
+ * @param {HTMLCollectionOf<Element>} html
+ * @returns {string}
+ */
+const getUniqueString = (html) => {
+  const uniqueHtml = getUniqueElement(html);
+  return uniqueHtml ? getUniqueElement(html).innerHTML : undefined;
+};
+
+/**
+ * Returns the unique integer value of a given HTMLCollection.
+ *
+ * @param {HTMLCollectionOf<Element>} html
+ * @returns {number}
+ */
+const getUniqueInteger = (html) => {
+  const uniqueString = getUniqueString(html);
+  return uniqueString ? parseInt(getUniqueString(html)) : undefined;
 };
 
 /**
@@ -66,12 +84,12 @@ const getUnique = (html, htmlOnly = false) => {
  */
 const getNote = (noteElement) => {
   /** @type {Element} */
-  const pitch = getUnique(noteElement.getElementsByTagName("pitch"), true);
+  const pitch = getUniqueElement(noteElement.getElementsByTagName("pitch"));
 
   return {
-    step: getUnique(pitch.getElementsByTagName("step")),
-    octave: getUnique(pitch.getElementsByTagName("octave")),
-    alter: getUnique(pitch.getElementsByTagName("alter")),
+    step: getUniqueString(pitch.getElementsByTagName("step")),
+    octave: getUniqueInteger(pitch.getElementsByTagName("octave")),
+    alter: getUniqueInteger(pitch.getElementsByTagName("alter")),
   };
 };
 
@@ -90,16 +108,16 @@ const noteIsEqual = (note1, note2) =>
  *
  * @param {Document} xml
  * @param {Note[]} pattern
- * @returns {NoteOccurrence[]}
+ * @returns {PatternOccurrence[]}
  */
 const findNotes = (xml, pattern) => {
-  /** @type {NoteOccurrence[]} */
+  /** @type {PatternOccurrence[]} */
   let occurrences = [];
 
   const parts = xml.getElementsByTagName("part");
 
   for (const part of parts) {
-    const measures = part.getElementsByTagName("measure");
+    // const measures = part.getElementsByTagName("measure");
 
     // for (const measure of measures) {
     const notes = part.getElementsByTagName("note");
@@ -108,24 +126,25 @@ const findNotes = (xml, pattern) => {
       .filter(
         (noteElement) => noteElement.getElementsByTagName("rest").length === 0
       )
-      .forEach((noteElement, noteIndex) => {
-        const occurrence = pattern.reduce(
-          (accumulator, patternNote, patternIndex) => {
-            const noteRef = notes[noteIndex + patternIndex];
-            if (typeof noteRef === "undefined") return accumulator;
+      .forEach((_, noteIndex) => {
+        const occurrence = pattern.reduce((
+          /** @type {PatternOccurrence} */ accumulator,
+          patternNote,
+          patternIndex
+        ) => {
+          const noteRef = notes[noteIndex + patternIndex];
+          if (typeof noteRef === "undefined") return accumulator;
 
-            const note = getNote(noteRef);
+          const note = getNote(noteRef);
 
-            return noteIsEqual(note, patternNote)
-              ? accumulator.concat({
-                  part: part.getAttribute("id"),
-                  // measure: parseInt(measure.getAttribute("number")),
-                  note,
-                })
-              : accumulator;
-          },
-          []
-        );
+          return noteIsEqual(note, patternNote)
+            ? accumulator.concat({
+                part: part.getAttribute("id"),
+                // measure: parseInt(measure.getAttribute("number")),
+                note,
+              })
+            : accumulator;
+        }, []);
 
         if (occurrence.length === pattern.length) occurrences.push(occurrence);
       });
@@ -141,6 +160,7 @@ const findNotes = (xml, pattern) => {
  * @param {HTMLElement} element
  */
 const renderMusicXML = (xml, element) => {
+  // @ts-ignore
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
   osmd.zoom = 0.75;
   osmd.load(xml).then(() => {
