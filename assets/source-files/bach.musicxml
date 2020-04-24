@@ -187,6 +187,51 @@
         <accidental>natural</accidental>
         <stem default-y="-55">down</stem>
       </note>
+    </measure>
+    <measure number="3" width="474">
+      <note default-x="25">
+        <pitch>
+          <step>B</step>
+          <alter>-1</alter>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <accidental>flat</accidental>
+        <stem default-y="-55">down</stem>
+      </note>
+      <note default-x="135">
+        <pitch>
+          <step>A</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y="10.5">up</stem>
+      </note>
+      <note default-x="244">
+        <pitch>
+          <step>C</step>
+          <octave>5</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <stem default-y="-50.5">down</stem>
+      </note>
+      <note default-x="354">
+        <pitch>
+          <step>B</step>
+          <octave>4</octave>
+        </pitch>
+        <duration>2</duration>
+        <voice>1</voice>
+        <type>quarter</type>
+        <accidental>natural</accidental>
+        <stem default-y="-55">down</stem>
+      </note>
       <barline location="right">
         <bar-style>light-heavy</bar-style>
       </barline>

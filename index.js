@@ -47,7 +47,7 @@ const isNumeric = (n) => !isNaN(parseFloat(n)) && isFinite(n);
  *
  * @param {Document} html
  * @param {boolean} [htmlOnly=false]
- * @returns {Object}
+ * @returns {string | number | Element}
  */
 const getUnique = (html, htmlOnly = false) => {
   if (html.length === 1) {
@@ -57,6 +57,33 @@ const getUnique = (html, htmlOnly = false) => {
     return isNumeric(value) ? parseInt(value) : value;
   }
 };
+
+/**
+ * Returns a Note object from a given Element
+ *
+ * @param {Element} noteElement
+ * @returns {Note}
+ */
+const getNote = (noteElement) => {
+  /** @type {Element} */
+  const pitch = getUnique(noteElement.getElementsByTagName("pitch"), true);
+
+  return {
+    step: getUnique(pitch.getElementsByTagName("step")),
+    octave: getUnique(pitch.getElementsByTagName("octave")),
+    alter: getUnique(pitch.getElementsByTagName("alter")),
+  };
+};
+
+/**
+ * Checks if a note is equal to a given note
+ *
+ * @param {Note} note1
+ * @param {Note} note2
+ * @returns {boolean}
+ */
+const noteIsEqual = (note1, note2) =>
+  note1.step === note2.step && note1.alter === note2.alter;
 
 /**
  * Returns an array of matching notes for a given pattern.
@@ -74,26 +101,35 @@ const findNotes = (xml, pattern) => {
   for (const part of parts) {
     const measures = part.getElementsByTagName("measure");
 
-    for (const measure of measures) {
-      const notes = measure.getElementsByTagName("note");
+    // for (const measure of measures) {
+    const notes = part.getElementsByTagName("note");
 
-      for (const note of notes) {
-        if (note.getElementsByTagName("rest").length > 0) break;
+    [...notes]
+      .filter(
+        (noteElement) => noteElement.getElementsByTagName("rest").length === 0
+      )
+      .forEach((noteElement, noteIndex) => {
+        const occurrence = pattern.reduce(
+          (accumulator, patternNote, patternIndex) => {
+            const noteRef = notes[noteIndex + patternIndex];
+            if (typeof noteRef === "undefined") return accumulator;
 
-        const pitch = getUnique(note.getElementsByTagName("pitch"), true);
-        const step = getUnique(pitch.getElementsByTagName("step"));
-        const octave = getUnique(pitch.getElementsByTagName("octave"));
-        const alter = getUnique(pitch.getElementsByTagName("alter"));
+            const note = getNote(noteRef);
 
-        if (step === pattern[0].step && alter === pattern[0].alter) {
-          occurrences.push({
-            part: part.getAttribute("id"),
-            measure: parseInt(measure.getAttribute("number")),
-            note: { step, alter, octave },
-          });
-        }
-      }
-    }
+            return noteIsEqual(note, patternNote)
+              ? accumulator.concat({
+                  part: part.getAttribute("id"),
+                  // measure: parseInt(measure.getAttribute("number")),
+                  note,
+                })
+              : accumulator;
+          },
+          []
+        );
+
+        if (occurrence.length === pattern.length) occurrences.push(occurrence);
+      });
+    // }
   }
 
   return occurrences;
@@ -102,10 +138,11 @@ const findNotes = (xml, pattern) => {
 /**
  * Renders the given XML document into the DOM.
  * @param {Document} xml
- * @param {string} id
+ * @param {HTMLElement} element
  */
-const renderMusicXML = (xml, id) => {
-  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(id);
+const renderMusicXML = (xml, element) => {
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
+  osmd.zoom = 0.75;
   osmd.load(xml).then(() => {
     osmd.render();
   });
@@ -116,12 +153,12 @@ const filenames = ["BeetAnGeSample.musicxml", "bach.musicxml"];
 
 (() =>
   readXML(ROOT_PATH + filenames[1], (xml) => {
-    renderMusicXML(xml, "sheet-music-container");
+    renderMusicXML(xml, document.getElementById("sheet-music-container"));
 
     /** @type {Note[]} */
     const pattern = [
-      { step: "A" },
       { step: "B", alter: -1 },
+      { step: "A" },
       { step: "C" },
       { step: "B" },
     ];
