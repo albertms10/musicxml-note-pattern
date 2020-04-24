@@ -6,16 +6,14 @@
  */
 
 /**
- * @typedef Note
- * @type {Object}
+ * @typedef {Object} Note
  * @property {string} step
  * @property {number} [alter]
  * @property {number} [octave]
  */
 
 /**
- * @typedef NoteOccurrence
- * @type {Object}
+ * @typedef {Object} NoteOccurrence
  * @property {string} part
  * @property {number} measure
  * @property {Note} note
@@ -101,10 +99,25 @@ const findNotes = (xml, pattern) => {
   return occurrences;
 };
 
+/**
+ * Renders the given XML document into the DOM.
+ * @param {Document} xml
+ * @param {string} id
+ */
+const renderMusicXML = (xml, id) => {
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(id);
+  osmd.load(xml).then(() => {
+    osmd.render();
+  });
+};
+
 const ROOT_PATH = "assets/source-files/";
+const filenames = ["BeetAnGeSample.musicxml", "bach.musicxml"];
 
 (() =>
-  readXML(ROOT_PATH + "BeetAnGeSample.musicxml", (xml) => {
+  readXML(ROOT_PATH + filenames[1], (xml) => {
+    renderMusicXML(xml, "sheet-music-container");
+
     /** @type {Note[]} */
     const pattern = [
       { step: "A" },
