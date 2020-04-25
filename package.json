@@ -1,0 +1,24 @@
+{
+  "name": "musicxml-note-pattern",
+  "version": "0.1.0",
+  "description": "A JavaScript library that finds note patterns in MusicXML files.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/albertms10/music-xml-note-pattern.git"
+  },
+  "keywords": [
+    "javascript",
+    "musicxml",
+    "opensheetmusicdisplay"
+  ],
+  "author": "Albert Mañosa",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/albertms10/music-xml-note-pattern/issues"
+  },
+  "homepage": "https://github.com/albertms10/music-xml-note-pattern#readme"
+}

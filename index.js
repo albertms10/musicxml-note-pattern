@@ -115,7 +115,7 @@ const findNotes = (xml, pattern) => {
         (noteElement) => noteElement.getElementsByTagName("rest").length === 0
       )
       .forEach((noteElement, noteIndex) => {
-        const occurrence = pattern.reduce((
+        const patternOccurrence = pattern.reduce((
           /** @type {PatternOccurrence} */ accumulator,
           patternNote,
           patternIndex
@@ -136,7 +136,8 @@ const findNotes = (xml, pattern) => {
             : accumulator;
         }, []);
 
-        if (occurrence.length === pattern.length) occurrences.push(occurrence);
+        if (patternOccurrence.length === pattern.length)
+          occurrences.push(patternOccurrence);
       });
   }
 
@@ -147,14 +148,19 @@ const findNotes = (xml, pattern) => {
  * Renders the given XML document into the DOM.
  * @param {Document} xml
  * @param {HTMLElement} element
+ * @returns {Object}
  */
 const renderMusicXML = (xml, element) => {
   // @ts-ignore
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
-  osmd.zoom = 0.75;
+
   osmd.load(xml).then(() => {
+    osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
+      "#FF0000";
+    osmd.zoom = 0.75;
     osmd.render();
   });
+  return osmd;
 };
 
 const ROOT_PATH = "assets/source-files/";
