@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/albertms10/music-xml-note-pattern/issues"
   },
-  "homepage": "https://github.com/albertms10/music-xml-note-pattern#readme"
+  "homepage": "https://github.com/albertms10/music-xml-note-pattern#readme",
+  "dependencies": {
+    "xmlhttprequest": "^1.8.0"
+  }
 }

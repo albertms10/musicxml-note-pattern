@@ -1,7 +1,7 @@
 /**
  * Callback function that gets the XML document response.
  * @callback readXMLCallback
- * @param {Document} responseXML
+ * @param {string} responseXML
  */
 
 /**
@@ -22,6 +22,8 @@
  * @typedef {NoteOccurrence[]} PatternOccurrence
  */
 
+const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+
 /**
  * Reads an XML file and calls the callback function afterwards.
  * @param {string} filename
@@ -32,16 +34,9 @@ const readXML = (filename, callback) => {
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) callback(this.responseXML);
   };
-  xhttp.open("GET", filename, true);
-  xhttp.send();
+  xhttp.open("GET", filename, true, null, null);
+  xhttp.send(null);
 };
-
-/**
- * Checks if the given parameter has a numeric value.
- * @param {*} n
- * @returns {boolean}
- */
-const isNumeric = (n) => !isNaN(parseFloat(n)) && isFinite(n);
 
 /**
  * Returns the unique element of a given HTMLCollection.
