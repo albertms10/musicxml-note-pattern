@@ -108,16 +108,13 @@ const findNotes = (xml, pattern) => {
   const parts = xml.getElementsByTagName("part");
 
   for (const part of parts) {
-    // const measures = part.getElementsByTagName("measure");
-
-    // for (const measure of measures) {
     const notes = part.getElementsByTagName("note");
 
     [...notes]
       .filter(
         (noteElement) => noteElement.getElementsByTagName("rest").length === 0
       )
-      .forEach((_, noteIndex) => {
+      .forEach((noteElement, noteIndex) => {
         const occurrence = pattern.reduce((
           /** @type {PatternOccurrence} */ accumulator,
           patternNote,
@@ -131,7 +128,9 @@ const findNotes = (xml, pattern) => {
           return noteIsEqual(note, patternNote)
             ? accumulator.concat({
                 part: part.getAttribute("id"),
-                // measure: parseInt(measure.getAttribute("number")),
+                measure: parseInt(
+                  noteElement.parentElement.getAttribute("number")
+                ),
                 note,
               })
             : accumulator;
@@ -139,7 +138,6 @@ const findNotes = (xml, pattern) => {
 
         if (occurrence.length === pattern.length) occurrences.push(occurrence);
       });
-    // }
   }
 
   return occurrences;
