@@ -1,7 +1,7 @@
 /**
  * Callback function that gets the XML document response.
  * @callback readXMLCallback
- * @param {string} responseXML
+ * @param {Document} responseXML
  */
 
 /**
@@ -22,24 +22,6 @@
  * @typedef {NoteOccurrence[]} PatternOccurrence
  */
 
-const OpenSheetMusicDisplay = require("opensheetmusicdisplay")
-const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-const http = require("http");
-
-const hostname = "127.0.0.1";
-const port = 3000;
-
-const server = http.createServer((req, res) => {
-  res.statusCode = 200;
-  res.setHeader("Content-Type", "text/plain");
-  res.end("Hello World");
-});
-
-server.listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
-});
-
-
 /**
  * Reads an XML file and calls the callback function afterwards.
  * @param {string} filename
@@ -50,8 +32,8 @@ const readXML = (filename, callback) => {
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) callback(this.responseXML);
   };
-  xhttp.open("GET", filename, true, null, null);
-  xhttp.send(null);
+  xhttp.open("GET", filename, true);
+  xhttp.send();
 };
 
 /**
@@ -119,6 +101,9 @@ const findNotes = (xml, pattern) => {
   const parts = xml.getElementsByTagName("part");
 
   for (const part of parts) {
+    // const measures = part.getElementsByTagName("measure");
+
+    // for (const measure of measures) {
     const notes = part.getElementsByTagName("note");
 
     [...notes]
@@ -139,9 +124,7 @@ const findNotes = (xml, pattern) => {
           return noteIsEqual(note, patternNote)
             ? accumulator.concat({
                 part: part.getAttribute("id"),
-                measure: parseInt(
-                  noteElement.parentElement.getAttribute("number")
-                ),
+                // measure: parseInt(measure.getAttribute("number")),
                 note,
               })
             : accumulator;
@@ -150,6 +133,7 @@ const findNotes = (xml, pattern) => {
         if (patternOccurrence.length === pattern.length)
           occurrences.push(patternOccurrence);
       });
+    // }
   }
 
   return occurrences;
@@ -162,7 +146,8 @@ const findNotes = (xml, pattern) => {
  * @returns {Object}
  */
 const renderMusicXML = (xml, element) => {
-  const osmd = new OpenSheetMusicDisplay(element);
+  // @ts-ignore
+  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
 
   osmd.load(xml).then(() => {
     // osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
