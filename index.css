@@ -1,4 +1,10 @@
-#drop_zone {
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans&display=swap");
+
+body {
+  font-family: "Noto Sans", Arial, Helvetica, sans-serif;
+}
+
+.file-drop-zone {
   border: 2px dashed #bbb;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
@@ -6,7 +12,6 @@
   padding: 25px;
   text-align: center;
   font-size: 16pt;
-  font-weight: bold;
   color: #bbb;
   -moz-user-select: none;
   -webkit-user-select: none;

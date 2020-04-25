@@ -216,7 +216,7 @@ const renderMusicXML = (xml, element) => {
 
 /**
  * Colors a note in the given `OpenSheetMusicDisplay` object instance.
- * @param {Object} osmd OpenSheetMusicDisplay object instance
+ * @param {Object} osmd `OpenSheetMusicDisplay` object instance
  * @param {Object} options
  * @param {number} [options.part = 0]
  * @param {number} [options.measure = 0]
@@ -227,15 +227,17 @@ const colorOsmdNote = (
   osmd,
   { part = 0, measure = 0, noteNumber = 0, color = "#777" }
 ) => {
-  osmd.graphic.measureList[measure][part].staffEntries[
-    noteNumber
+  console.log(part, measure, noteNumber);
+
+  osmd.graphic.measureList[measure - 1][0].staffEntries[
+    noteNumber - 1
   ].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor = color;
 };
 
 /**
  * Colors a list of pattern occurrences in the given
  * `OpenSheetMusicDisplay` object instance.
- * @param {Object} osmd OpenSheetMusicDisplay object instance
+ * @param {Object} osmd `OpenSheetMusicDisplay` object instance
  * @param {PatternOccurrence[]} patternOccurrences
  * @param {string[]} [colorsList = ["#777"]]
  */
@@ -247,9 +249,9 @@ const colorOsmdPatternOccurrences = (
   patternOccurrences.forEach((patternOccurrence) => {
     patternOccurrence.notes.forEach((noteOccurrence) => {
       colorOsmdNote(osmd, {
-        part: noteOccurrence.part - 1,
-        measure: noteOccurrence.measure - 1,
-        noteNumber: noteOccurrence.measureNoteNumber - 1,
+        part: noteOccurrence.part,
+        measure: noteOccurrence.measure,
+        noteNumber: noteOccurrence.measureNoteNumber,
         color:
           colorsList[
             (patternOccurrence.occurenceNumber - 1) % colorsList.length
@@ -277,7 +279,7 @@ const initFileSelection = (processFile) => {
     const files = e.dataTransfer.files; // FileList object.
 
     if (!files.length) {
-      alert("Please select a file!");
+      alert("Please, select a file.");
       return;
     }
 
