@@ -259,37 +259,102 @@ const colorOsmdPatternOccurrences = (
   });
 };
 
-const ROOT_PATH = "assets/source-files/";
-const filenames = ["BeetAnGeSample.musicxml", "bach.musicxml"];
+// TODO Check file format
+/**
+ *
+ * @param {readXMLCallback} processFile
+ */
+const initFileSelection = (processFile) => {
+  /**
+   * Handles a `drag` file event.
+   * @param {DragEvent} e
+   * @param {readXMLCallback} callback
+   */
+  const handleDraggedFileSelect = (e, callback) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-(() =>
-  readXML(ROOT_PATH + filenames[1], (xml) => {
-    const osmd = renderMusicXML(
-      xml,
-      document.getElementById("sheet-music-container")
-    );
+    const files = e.dataTransfer.files; // FileList object.
 
-    /** @type {Pattern} */
-    const pattern = [
-      { step: "B", alter: -1 },
-      { step: "A" },
-      { step: "C" },
-      { step: "B" },
-    ];
+    if (!files.length) {
+      alert("Please select a file!");
+      return;
+    }
 
-    const patternOccurrences = findPattern(xml, pattern);
+    const file = files[0];
+    const reader = new FileReader();
 
-    colorOsmdPatternOccurrences(
-      osmd,
-      patternOccurrences.exactPatternOccurrences,
-      colors
-    );
+    reader.onloadend = (e) => {
+      if (e.target.readyState == FileReader.DONE) {
+        const parser = new DOMParser();
+        const document = parser.parseFromString(
+          e.target.result.toString(),
+          "text/xml"
+        );
+        callback(document);
+      }
+    };
 
-    colorOsmdPatternOccurrences(
-      osmd,
-      patternOccurrences.approximatePatternOccurrences,
-      colors.map((color) => color + "55")
-    );
+    const blob = file.slice(0, file.size - 1);
+    reader.readAsBinaryString(blob);
+  };
 
-    console.log(patternOccurrences);
-  }))();
+  /**
+   * Handles the `dragover` event.
+   * @param {DragEvent} e
+   */
+  const handleDragOver = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+
+  const dropZone = document.getElementById("drop_zone");
+  dropZone.addEventListener("dragover", handleDragOver, false);
+  dropZone.addEventListener(
+    "drop",
+    (e) => handleDraggedFileSelect(e, processFile),
+    false
+  );
+};
+
+/**
+ * Processes the given XML document.
+ * @param {Document} xml
+ */
+const processXML = (xml) => {
+  const osmd = renderMusicXML(
+    xml,
+    document.getElementById("sheet-music-container")
+  );
+
+  /** @type {Pattern} */
+  const pattern = [
+    { step: "B", alter: -1 },
+    { step: "A" },
+    { step: "C" },
+    { step: "B" },
+  ];
+
+  const patternOccurrences = findPattern(xml, pattern);
+
+  colorOsmdPatternOccurrences(
+    osmd,
+    patternOccurrences.exactPatternOccurrences,
+    colors
+  );
+
+  colorOsmdPatternOccurrences(
+    osmd,
+    patternOccurrences.approximatePatternOccurrences,
+    colors.map((color) => color + "55")
+  );
+
+  console.log(patternOccurrences);
+};
+
+(() => {
+  if (window.File && window.FileReader && window.Blob)
+    initFileSelection(processXML);
+  else alert("The File APIs are not fully supported in this browser.");
+})();

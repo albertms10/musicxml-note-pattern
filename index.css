@@ -1,0 +1,14 @@
+#drop_zone {
+  border: 2px dashed #bbb;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  border-radius: 5px;
+  padding: 25px;
+  text-align: center;
+  font-size: 16pt;
+  font-weight: bold;
+  color: #bbb;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+}

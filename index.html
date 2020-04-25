@@ -4,10 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MusicXML note pattern</title>
-    <script src="assets/libs/opensheetmusicdisplay/opensheetmusicdisplay.min.js"></script>
+    <link rel="stylesheet" href="index.css"></link>
+    <script
+      defer
+      src="assets/libs/opensheetmusicdisplay/opensheetmusicdisplay.min.js"
+    ></script>
     <script defer src="index.js"></script>
   </head>
   <body>
+    <div id="drop_zone">Drop a MusicXML file here</div>
+    <output id="list"></output>
     <div id="sheet-music-container" style="width: 100vw;"></div>
   </body>
 </html>
