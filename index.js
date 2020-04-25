@@ -14,7 +14,7 @@
 /**
  * @typedef {Object} NoteOccurrence
  * @property {string} part
- * @property {number} [measure]
+ * @property {number} measure
  * @property {Note} note
  */
 
@@ -101,9 +101,6 @@ const findNotes = (xml, pattern) => {
   const parts = xml.getElementsByTagName("part");
 
   for (const part of parts) {
-    // const measures = part.getElementsByTagName("measure");
-
-    // for (const measure of measures) {
     const notes = part.getElementsByTagName("note");
 
     [...notes]
@@ -124,7 +121,9 @@ const findNotes = (xml, pattern) => {
           return noteIsEqual(note, patternNote)
             ? accumulator.concat({
                 part: part.getAttribute("id"),
-                // measure: parseInt(measure.getAttribute("number")),
+                measure: parseInt(
+                  noteElement.parentElement.getAttribute("number")
+                ),
                 note,
               })
             : accumulator;
@@ -133,7 +132,6 @@ const findNotes = (xml, pattern) => {
         if (patternOccurrence.length === pattern.length)
           occurrences.push(patternOccurrence);
       });
-    // }
   }
 
   return occurrences;
@@ -151,7 +149,7 @@ const renderMusicXML = (xml, element) => {
 
   osmd.load(xml).then(() => {
     // osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
-      "#FF0000";
+    "#FF0000";
     osmd.zoom = 0.75;
     osmd.render();
   });
