@@ -22,7 +22,23 @@
  * @typedef {NoteOccurrence[]} PatternOccurrence
  */
 
+const OpenSheetMusicDisplay = require("opensheetmusicdisplay")
 const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+const http = require("http");
+
+const hostname = "127.0.0.1";
+const port = 3000;
+
+const server = http.createServer((req, res) => {
+  res.statusCode = 200;
+  res.setHeader("Content-Type", "text/plain");
+  res.end("Hello World");
+});
+
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
+});
+
 
 /**
  * Reads an XML file and calls the callback function afterwards.
@@ -30,7 +46,7 @@ const XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
  * @param {readXMLCallback} callback
  */
 const readXML = (filename, callback) => {
-  var xhttp = new XMLHttpRequest();
+  const xhttp = new XMLHttpRequest();
   xhttp.onreadystatechange = function () {
     if (this.readyState == 4 && this.status == 200) callback(this.responseXML);
   };
@@ -146,11 +162,10 @@ const findNotes = (xml, pattern) => {
  * @returns {Object}
  */
 const renderMusicXML = (xml, element) => {
-  // @ts-ignore
-  const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
+  const osmd = new OpenSheetMusicDisplay(element);
 
   osmd.load(xml).then(() => {
-    osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
+    // osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
       "#FF0000";
     osmd.zoom = 0.75;
     osmd.render();
