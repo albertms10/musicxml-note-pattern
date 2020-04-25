@@ -13,13 +13,21 @@
 
 /**
  * @typedef {Object} NoteOccurrence
- * @property {string} part
+ * @property {number} [occurrenceNumber]
+ * @property {number} [measureNoteNumber]
+ * @property {number} part
  * @property {number} measure
  * @property {Note} note
  */
 
 /**
- * @typedef {NoteOccurrence[]} PatternOccurrence
+ * @typedef {Note[]} Pattern
+ */
+
+/**
+ * @typedef {Object} PatternOccurrence
+ * @property {number} occurenceNumber
+ * @property {NoteOccurrence[]} notes
  */
 
 /**
@@ -37,14 +45,14 @@ const readXML = (filename, callback) => {
 };
 
 /**
- * Returns the unique element of a given HTMLCollection.
+ * Returns the unique element of a given `HTMLCollection`.
  * @param {HTMLCollectionOf<Element>} html
  * @returns {Element}
  */
 const getUniqueElement = (html) => (html.length === 1 ? html[0] : undefined);
 
 /**
- * Returns the unique string value of a given HTMLCollection.
+ * Returns the unique string value of a given `HTMLCollection`.
  * @param {HTMLCollectionOf<Element>} html
  * @returns {string}
  */
@@ -54,7 +62,7 @@ const getUniqueString = (html) => {
 };
 
 /**
- * Returns the unique integer value of a given HTMLCollection.
+ * Returns the unique integer value of a given `HTMLCollection`.
  * @param {HTMLCollectionOf<Element>} html
  * @returns {number}
  */
@@ -64,7 +72,7 @@ const getUniqueInteger = (html) => {
 };
 
 /**
- * Returns a Note object from a given Element
+ * Returns a `Note` object from a given `Element`.
  * @param {Element} noteElement
  * @returns {Note}
  */
@@ -80,7 +88,7 @@ const getNote = (noteElement) => {
 };
 
 /**
- * Checks if a note is equal to a given note
+ * Checks the equality of two given notes.
  * @param {Note} note1
  * @param {Note} note2
  * @returns {boolean}
@@ -89,53 +97,105 @@ const noteIsEqual = (note1, note2) =>
   note1.step === note2.step && note1.alter === note2.alter;
 
 /**
- * Returns an array of matching notes for a given pattern.
- * @param {Document} xml
- * @param {Note[]} pattern
- * @returns {PatternOccurrence[]}
+ * Returns the index of the given element from its `tagName` siblings.
+ * @param {Element} element
+ * @param {string} tagName
  */
-const findNotes = (xml, pattern) => {
+const getNodeIndex = (element, tagName) =>
+  Array.from(element.parentElement.getElementsByTagName(tagName)).indexOf(
+    element
+  );
+
+/**
+ * Returns `true` if the given note element is not a rest.
+ * @param {Element} noteElement
+ */
+const isNotRest = (noteElement) =>
+  noteElement.getElementsByTagName("rest").length === 0;
+
+/**
+ * Returns an array of matching `PatternOccurrence` for a given pattern.
+ * @param {Document} xml
+ * @param {Pattern} pattern
+ * @returns {{
+ * exactPatternOccurrences: PatternOccurrence[],
+ * approximatePatternOccurrences: PatternOccurrence[]
+ * }}
+ */
+const findPattern = (xml, pattern) => {
   /** @type {PatternOccurrence[]} */
-  let occurrences = [];
+  let exactPatternOccurrences = [];
+  let exactPatternOccurrenceCount = 0;
+
+  /** @type {PatternOccurrence[]} */
+  let approximatePatternOccurrences = [];
+  let approximatePatternOccurrenceCount = 0;
 
   const parts = xml.getElementsByTagName("part");
 
   for (const part of parts) {
     const notes = part.getElementsByTagName("note");
 
-    [...notes]
-      .filter(
-        (noteElement) => noteElement.getElementsByTagName("rest").length === 0
-      )
-      .forEach((noteElement, noteIndex) => {
-        const patternOccurrence = pattern.reduce((
-          /** @type {PatternOccurrence} */ accumulator,
-          patternNote,
-          patternIndex
-        ) => {
-          const noteRef = notes[noteIndex + patternIndex];
-          if (typeof noteRef === "undefined") return accumulator;
+    [...notes].filter(isNotRest).forEach((_, noteIndex) => {
+      const patternOccurrence = pattern.reduce((
+        /** @type {NoteOccurrence[]} */ accumulator,
+        patternNote,
+        patternIndex
+      ) => {
+        const noteRef = notes[noteIndex + patternIndex];
+        if (typeof noteRef === "undefined") return accumulator;
+        if (!isNotRest(noteRef)) return accumulator;
 
-          const note = getNote(noteRef);
+        const note = getNote(noteRef);
+        const partString = part.getAttribute("id");
 
-          return noteIsEqual(note, patternNote)
-            ? accumulator.concat({
-                part: part.getAttribute("id"),
-                measure: parseInt(
-                  noteElement.parentElement.getAttribute("number")
-                ),
-                note,
-              })
-            : accumulator;
-        }, []);
+        // TODO `break` when a note does not match with the pattern
+        return noteIsEqual(note, patternNote)
+          ? accumulator.concat({
+              part: parseInt(partString.substring(1, partString.length)),
+              measure: parseInt(noteRef.parentElement.getAttribute("number")),
+              measureNoteNumber: getNodeIndex(noteRef, "note") + 1,
+              note,
+            })
+          : accumulator;
+      }, []);
 
-        if (patternOccurrence.length === pattern.length)
-          occurrences.push(patternOccurrence);
-      });
+      if (patternOccurrence.length === pattern.length) {
+        exactPatternOccurrences.push({
+          occurenceNumber: ++exactPatternOccurrenceCount,
+          notes: patternOccurrence,
+        });
+      } else if (patternOccurrence.length > 2) {
+        approximatePatternOccurrences.push({
+          occurenceNumber: ++approximatePatternOccurrenceCount,
+          notes: patternOccurrence,
+        });
+      }
+    });
   }
 
-  return occurrences;
+  return { exactPatternOccurrences, approximatePatternOccurrences };
 };
+
+/** List of Material Design colors’ HEX codes */
+const colors = [
+  "#F44336",
+  "#E91E63",
+  "#9C27B0",
+  "#673AB7",
+  "#3F51B5",
+  "#2196F3",
+  "#03A9F4",
+  "#00BCD4",
+  "#009688",
+  "#4CAF50",
+  "#8BC34A",
+  "#CDDC39",
+  "#FFEB3B",
+  "#FFC107",
+  "#FF9800",
+  "#FF5722",
+];
 
 /**
  * Renders the given XML document into the DOM.
@@ -148,12 +208,55 @@ const renderMusicXML = (xml, element) => {
   const osmd = new opensheetmusicdisplay.OpenSheetMusicDisplay(element);
 
   osmd.load(xml).then(() => {
-    // osmd.graphic.measureList[0][0].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
-    "#FF0000";
     osmd.zoom = 0.75;
     osmd.render();
   });
   return osmd;
+};
+
+/**
+ * Colors a note in the given `OpenSheetMusicDisplay` object instance.
+ * @param {Object} osmd OpenSheetMusicDisplay object instance
+ * @param {Object} options
+ * @param {number} [options.part = 0]
+ * @param {number} [options.measure = 0]
+ * @param {number} [options.noteNumber = 0]
+ * @param {string} [options.color = "#777"]
+ */
+const colorOsmdNote = (
+  osmd,
+  { part = 0, measure = 0, noteNumber = 0, color = "#777" }
+) => {
+  osmd.graphic.measureList[measure][part].staffEntries[
+    noteNumber
+  ].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor = color;
+};
+
+/**
+ * Colors a list of pattern occurrences in the given
+ * `OpenSheetMusicDisplay` object instance.
+ * @param {Object} osmd OpenSheetMusicDisplay object instance
+ * @param {PatternOccurrence[]} patternOccurrences
+ * @param {string[]} [colorsList = ["#777"]]
+ */
+const colorOsmdPatternOccurrences = (
+  osmd,
+  patternOccurrences,
+  colorsList = ["#777"]
+) => {
+  patternOccurrences.forEach((patternOccurrence) => {
+    patternOccurrence.notes.forEach((noteOccurrence) => {
+      colorOsmdNote(osmd, {
+        part: noteOccurrence.part - 1,
+        measure: noteOccurrence.measure - 1,
+        noteNumber: noteOccurrence.measureNoteNumber - 1,
+        color:
+          colorsList[
+            (patternOccurrence.occurenceNumber - 1) % colorsList.length
+          ],
+      });
+    });
+  });
 };
 
 const ROOT_PATH = "assets/source-files/";
@@ -161,9 +264,12 @@ const filenames = ["BeetAnGeSample.musicxml", "bach.musicxml"];
 
 (() =>
   readXML(ROOT_PATH + filenames[1], (xml) => {
-    renderMusicXML(xml, document.getElementById("sheet-music-container"));
+    const osmd = renderMusicXML(
+      xml,
+      document.getElementById("sheet-music-container")
+    );
 
-    /** @type {Note[]} */
+    /** @type {Pattern} */
     const pattern = [
       { step: "B", alter: -1 },
       { step: "A" },
@@ -171,7 +277,19 @@ const filenames = ["BeetAnGeSample.musicxml", "bach.musicxml"];
       { step: "B" },
     ];
 
-    const notes = findNotes(xml, pattern);
+    const patternOccurrences = findPattern(xml, pattern);
 
-    console.log(notes);
+    colorOsmdPatternOccurrences(
+      osmd,
+      patternOccurrences.exactPatternOccurrences,
+      colors
+    );
+
+    colorOsmdPatternOccurrences(
+      osmd,
+      patternOccurrences.approximatePatternOccurrences,
+      colors.map((color) => color + "55")
+    );
+
+    console.log(patternOccurrences);
   }))();
