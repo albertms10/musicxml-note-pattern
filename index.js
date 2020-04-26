@@ -60,6 +60,7 @@ const getUniqueInteger = (html) => {
   return uniqueString ? parseInt(getUniqueString(html)) : undefined;
 };
 
+// FIXME: Refactor global-scoped variable `staffVoices`
 let staffVoices = [];
 
 // TODO: Return only defined Note properties?
