@@ -76,7 +76,7 @@ const getUniqueInteger = (html) => {
 
 let staffVoices = [];
 
-// TODO Return only defined Note properties?
+// TODO: Return only defined Note properties?
 /**
  * Returns a `Note` object from a given `Element`.
  * @param {Element} noteElement
@@ -171,48 +171,67 @@ const findPattern = (xml, pattern) => {
 
   const parts = xml.getElementsByTagName("part");
 
-  [...parts].forEach((partElement, partIndex) => {
+  [...parts].forEach((partElement) => {
     staffCount++;
-    //staffCount += getUniqueInteger(partElement.getElementsByTagName("staves"));
+    const partStaffCount =
+      getUniqueInteger(partElement.getElementsByTagName("staves")) || 1;
+
     const notes = partElement.getElementsByTagName("note");
 
-    [...notes].filter(isNotRest).forEach((_, noteIndex) => {
-      const patternOccurrence = pattern.reduce((
-        /** @type {NoteOccurrence[]} */ accumulator,
-        patternNote,
-        patternIndex
-      ) => {
-        const noteRef = notes[noteIndex + patternIndex];
-        if (typeof noteRef === "undefined" || !isNotRest(noteRef))
-          return accumulator;
+    let staveNotes = [];
 
-        const note = getNote(noteRef);
-        const prevAccumulator = accumulator[accumulator.length - 1];
-        const prevNote = prevAccumulator ? prevAccumulator.note : note;
+    if (partStaffCount > 1)
+      [...notes].filter(isNotRest).forEach((noteElement) => {
+        const staff = getUniqueInteger(
+          noteElement.getElementsByTagName("staff")
+        );
 
-        return noteIsEqual(note, patternNote) &&
-          staffVoiceIsEqual(note, prevNote)
-          ? accumulator.concat({
-              staff: staffCount + note.staff - 1,
-              measure: parseInt(noteRef.parentElement.getAttribute("number")),
-              measureNoteNumber:
-                getElementIndex(noteRef, "note", "voice", note.voice) + 1,
-              note,
-            })
-          : accumulator;
-      }, []);
+        if (staveNotes[staff - 1]) staveNotes[staff - 1].push(noteElement);
+        else staveNotes[staff - 1] = [noteElement];
+      });
+    else staveNotes[0] = notes;
 
-      if (patternOccurrence.length === pattern.length) {
-        exactPatternOccurrences.push({
-          occurenceNumber: ++exactPatternOccurrenceCount,
-          notes: patternOccurrence,
-        });
-      } else if (patternOccurrence.length > 2) {
-        approximatePatternOccurrences.push({
-          occurenceNumber: ++approximatePatternOccurrenceCount,
-          notes: patternOccurrence,
-        });
-      }
+    staveNotes.forEach((staffNotes) => {
+      console.log(staffNotes);
+
+      [...staffNotes].filter(isNotRest).forEach((_, noteIndex) => {
+        const patternOccurrence = pattern.reduce((
+          /** @type {NoteOccurrence[]} */ accumulator,
+          patternNote,
+          patternIndex
+        ) => {
+          const noteRef = staffNotes[noteIndex + patternIndex];
+          if (typeof noteRef === "undefined" || !isNotRest(noteRef))
+            return accumulator;
+
+          const note = getNote(noteRef);
+          const prevAccumulator = accumulator[accumulator.length - 1];
+          const prevNote = prevAccumulator ? prevAccumulator.note : note;
+
+          return noteIsEqual(note, patternNote) &&
+            staffVoiceIsEqual(note, prevNote)
+            ? accumulator.concat({
+                staff: staffCount + note.staff - 1,
+                measure: parseInt(noteRef.parentElement.getAttribute("number")),
+                measureNoteNumber:
+                  getElementIndex(noteRef, "note", "voice", note.voice) + 1,
+                note,
+              })
+            : accumulator;
+        }, []);
+
+        if (patternOccurrence.length === pattern.length) {
+          exactPatternOccurrences.push({
+            occurenceNumber: ++exactPatternOccurrenceCount,
+            notes: patternOccurrence,
+          });
+        } else if (patternOccurrence.length > 2) {
+          approximatePatternOccurrences.push({
+            occurenceNumber: ++approximatePatternOccurrenceCount,
+            notes: patternOccurrence,
+          });
+        }
+      });
     });
   });
 
@@ -317,7 +336,7 @@ const colorOsmdPatternOccurrences = (
   });
 };
 
-// TODO Check file format
+// TODO: Check file format
 /**
  * Initializes file selection handlers and event listeners.
  * @param {readXMLCallback} processFile
