@@ -413,8 +413,6 @@ const processXML = (xml) => {
   console.log({ exactPatternOccurrences, approximatePatternOccurrences });
 };
 
-(() => {
-  if (window.File && window.FileReader && window.Blob)
-    initFileSelection(processXML);
-  else alert("The File APIs are not fully supported in this browser.");
-})();
+if (window.File && window.FileReader && window.Blob)
+  initFileSelection(processXML);
+else alert("The File APIs are not fully supported in this browser.");
