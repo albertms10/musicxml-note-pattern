@@ -426,9 +426,6 @@ const processXML = (xml) => {
     colors.map((color) => color + "55")
   );
 
-  osmd.graphic.measureList[0][1].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
-    colors[8];
-
   console.log({ exactPatternOccurrences, approximatePatternOccurrences });
 };
 
