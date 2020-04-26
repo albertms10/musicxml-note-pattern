@@ -149,6 +149,7 @@ const getElementIndex = (element, tagName, filterTagName, filterValue) => {
 const isNotRest = (noteElement) =>
   noteElement.getElementsByTagName("rest").length === 0;
 
+// TODO: Check MusicXML structure
 /**
  * Returns an array of matching `PatternOccurrence` for a given pattern.
  * @param {Document} xml
