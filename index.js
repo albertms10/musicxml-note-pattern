@@ -101,7 +101,7 @@ const getNote = (noteElement) => {
  * @returns {boolean}
  */
 const noteIsEqual = (note1, note2) =>
-  note1.step === note2.step && note1.alter === note2.alter;
+  note1 && note2 && note1.step === note2.step && note1.alter === note2.alter;
 
 /**
  * Checks the staff and voice equality of two given notes.
@@ -109,7 +109,7 @@ const noteIsEqual = (note1, note2) =>
  * @param {Note} note2
  */
 const staffVoiceIsEqual = (note1, note2) =>
-  note1.staff === note2.staff && note1.voice === note2.voice;
+  note1 && note2 && note1.staff === note2.staff && note1.voice === note2.voice;
 
 /**
  * Returns the index of the given element from its `tagName` siblings.
@@ -181,8 +181,6 @@ const findPattern = (xml, pattern) => {
     else staveNotes[0] = notes;
 
     staveNotes.forEach((staffNotes) => {
-      console.log(staffNotes);
-
       [...staffNotes].filter(isNotRest).forEach((_, noteIndex) => {
         const patternOccurrence = pattern.reduce((
           /** @type {NoteOccurrence[]} */ accumulator,
@@ -195,10 +193,11 @@ const findPattern = (xml, pattern) => {
 
           const note = getNote(noteRef);
           const prevAccumulator = accumulator[accumulator.length - 1];
-          const prevNote = prevAccumulator ? prevAccumulator.note : note;
+          const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
 
-          return noteIsEqual(note, patternNote) &&
-            staffVoiceIsEqual(note, prevNote)
+          return (noteIsEqual(note, patternNote) &&
+            staffVoiceIsEqual(note, prevNote || note)) ||
+            noteIsEqual(note, prevNote)
             ? accumulator.concat({
                 staff: staffCount + note.staff - 1,
                 measure: parseInt(noteRef.parentElement.getAttribute("number")),
@@ -209,7 +208,7 @@ const findPattern = (xml, pattern) => {
             : accumulator;
         }, []);
 
-        if (patternOccurrence.length === pattern.length) {
+        if (patternOccurrence.length >= pattern.length) {
           exactPatternOccurrences.push({
             occurenceNumber: ++exactPatternOccurrenceCount,
             notes: patternOccurrence,
