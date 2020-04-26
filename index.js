@@ -9,13 +9,16 @@
  * @property {string} step
  * @property {number} [alter]
  * @property {number} [octave]
+ * @property {number} [staff=1]
+ * @property {number} [voice=1]
+ * @property {number} [staffVoice=1]
  */
 
 /**
  * @typedef {Object} NoteOccurrence
  * @property {number} [occurrenceNumber]
  * @property {number} [measureNoteNumber]
- * @property {number} part
+ * @property {number} staff
  * @property {number} measure
  * @property {Note} note
  */
@@ -46,14 +49,14 @@ const readXML = (filename, callback) => {
 
 /**
  * Returns the unique element of a given `HTMLCollection`.
- * @param {HTMLCollectionOf<Element>} html
+ * @param {HTMLCollectionOf.<Element>} html
  * @returns {Element}
  */
 const getUniqueElement = (html) => (html.length === 1 ? html[0] : undefined);
 
 /**
  * Returns the unique string value of a given `HTMLCollection`.
- * @param {HTMLCollectionOf<Element>} html
+ * @param {HTMLCollectionOf.<Element>} html
  * @returns {string}
  */
 const getUniqueString = (html) => {
@@ -63,7 +66,7 @@ const getUniqueString = (html) => {
 
 /**
  * Returns the unique integer value of a given `HTMLCollection`.
- * @param {HTMLCollectionOf<Element>} html
+ * @param {HTMLCollectionOf.<Element>} html
  * @returns {number}
  */
 const getUniqueInteger = (html) => {
@@ -71,6 +74,9 @@ const getUniqueInteger = (html) => {
   return uniqueString ? parseInt(getUniqueString(html)) : undefined;
 };
 
+let staffVoices = [];
+
+// TODO Return only defined Note properties?
 /**
  * Returns a `Note` object from a given `Element`.
  * @param {Element} noteElement
@@ -80,10 +86,23 @@ const getNote = (noteElement) => {
   /** @type {Element} */
   const pitch = getUniqueElement(noteElement.getElementsByTagName("pitch"));
 
+  const staff = getUniqueInteger(noteElement.getElementsByTagName("staff"));
+  const voice = getUniqueInteger(noteElement.getElementsByTagName("voice"));
+
+  const sv = staffVoices[staff - 1];
+  if (sv) {
+    if (sv.length > 0 && sv.indexOf(voice) === -1) sv.push(voice);
+  } else {
+    staffVoices[staff - 1] = [voice];
+  }
+
   return {
     step: getUniqueString(pitch.getElementsByTagName("step")),
     octave: getUniqueInteger(pitch.getElementsByTagName("octave")),
     alter: getUniqueInteger(pitch.getElementsByTagName("alter")),
+    staff: staff ? staff : 1,
+    voice: voice ? voice : 1,
+    staffVoice: staffVoices[staff - 1].indexOf(voice) + 1,
   };
 };
 
@@ -97,14 +116,31 @@ const noteIsEqual = (note1, note2) =>
   note1.step === note2.step && note1.alter === note2.alter;
 
 /**
+ * Checks the staff and voice equality of two given notes.
+ * @param {Note} note1
+ * @param {Note} note2
+ */
+const staffVoiceIsEqual = (note1, note2) =>
+  note1.staff === note2.staff && note1.voice === note2.voice;
+
+/**
  * Returns the index of the given element from its `tagName` siblings.
  * @param {Element} element
  * @param {string} tagName
+ * @param {string} filterTagName
+ * @param {*} filterValue
  */
-const getNodeIndex = (element, tagName) =>
-  Array.from(element.parentElement.getElementsByTagName(tagName)).indexOf(
-    element
-  );
+const getElementIndex = (element, tagName, filterTagName, filterValue) => {
+  return Array.from(element.parentElement.getElementsByTagName(tagName))
+    .filter((sibling) => {
+      const siblingTags = sibling.getElementsByTagName(filterTagName);
+
+      return siblingTags.length > 0
+        ? siblingTags[0].innerHTML == filterValue.toString()
+        : false;
+    })
+    .indexOf(element);
+};
 
 /**
  * Returns `true` if the given note element is not a rest.
@@ -131,10 +167,14 @@ const findPattern = (xml, pattern) => {
   let approximatePatternOccurrences = [];
   let approximatePatternOccurrenceCount = 0;
 
+  let staffCount = 0;
+
   const parts = xml.getElementsByTagName("part");
 
-  for (const part of parts) {
-    const notes = part.getElementsByTagName("note");
+  [...parts].forEach((partElement, partIndex) => {
+    staffCount++;
+    //staffCount += getUniqueInteger(partElement.getElementsByTagName("staves"));
+    const notes = partElement.getElementsByTagName("note");
 
     [...notes].filter(isNotRest).forEach((_, noteIndex) => {
       const patternOccurrence = pattern.reduce((
@@ -143,18 +183,20 @@ const findPattern = (xml, pattern) => {
         patternIndex
       ) => {
         const noteRef = notes[noteIndex + patternIndex];
-        if (typeof noteRef === "undefined") return accumulator;
-        if (!isNotRest(noteRef)) return accumulator;
+        if (typeof noteRef === "undefined" || !isNotRest(noteRef))
+          return accumulator;
 
         const note = getNote(noteRef);
-        const partString = part.getAttribute("id");
+        const prevAccumulator = accumulator[accumulator.length - 1];
+        const prevNote = prevAccumulator ? prevAccumulator.note : note;
 
-        // TODO `break` when a note does not match with the pattern
-        return noteIsEqual(note, patternNote)
+        return noteIsEqual(note, patternNote) &&
+          staffVoiceIsEqual(note, prevNote)
           ? accumulator.concat({
-              part: parseInt(partString.substring(1, partString.length)),
+              staff: staffCount + note.staff - 1,
               measure: parseInt(noteRef.parentElement.getAttribute("number")),
-              measureNoteNumber: getNodeIndex(noteRef, "note") + 1,
+              measureNoteNumber:
+                getElementIndex(noteRef, "note", "voice", note.voice) + 1,
               note,
             })
           : accumulator;
@@ -172,7 +214,7 @@ const findPattern = (xml, pattern) => {
         });
       }
     });
-  }
+  });
 
   return { exactPatternOccurrences, approximatePatternOccurrences };
 };
@@ -218,20 +260,33 @@ const renderMusicXML = (xml, element) => {
  * Colors a note in the given `OpenSheetMusicDisplay` object instance.
  * @param {Object} osmd `OpenSheetMusicDisplay` object instance
  * @param {Object} options
- * @param {number} [options.part = 0]
- * @param {number} [options.measure = 0]
- * @param {number} [options.noteNumber = 0]
- * @param {string} [options.color = "#777"]
+ * @param {number} [options.staff=1]
+ * @param {number} [options.measure=1]
+ * @param {number} [options.staffVoice=1]
+ * @param {number} [options.noteNumber=1]
+ * @param {string} [options.color="#777"]
  */
 const colorOsmdNote = (
   osmd,
-  { part = 0, measure = 0, noteNumber = 0, color = "#777" }
+  { staff = 1, measure = 1, staffVoice = 1, noteNumber = 1, color = "#777" }
 ) => {
-  console.log(part, measure, noteNumber);
+  console.log({
+    staff,
+    measure,
+    staffVoice,
+    noteNumber,
+    color,
+  });
 
-  osmd.graphic.measureList[measure - 1][0].staffEntries[
-    noteNumber - 1
-  ].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor = color;
+  try {
+    osmd.graphic.measureList[measure - 1][staff - 1].staffEntries[
+      noteNumber - 1
+    ].graphicalVoiceEntries[
+      staffVoice - 1
+    ].notes[0].sourceNote.noteheadColor = color;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 /**
@@ -239,7 +294,7 @@ const colorOsmdNote = (
  * `OpenSheetMusicDisplay` object instance.
  * @param {Object} osmd `OpenSheetMusicDisplay` object instance
  * @param {PatternOccurrence[]} patternOccurrences
- * @param {string[]} [colorsList = ["#777"]]
+ * @param {string[]} [colorsList=["#777"]]
  */
 const colorOsmdPatternOccurrences = (
   osmd,
@@ -249,8 +304,9 @@ const colorOsmdPatternOccurrences = (
   patternOccurrences.forEach((patternOccurrence) => {
     patternOccurrence.notes.forEach((noteOccurrence) => {
       colorOsmdNote(osmd, {
-        part: noteOccurrence.part,
+        staff: noteOccurrence.staff,
         measure: noteOccurrence.measure,
+        staffVoice: noteOccurrence.note.staffVoice,
         noteNumber: noteOccurrence.measureNoteNumber,
         color:
           colorsList[
@@ -263,7 +319,7 @@ const colorOsmdPatternOccurrences = (
 
 // TODO Check file format
 /**
- *
+ * Initializes file selection handlers and event listeners.
  * @param {readXMLCallback} processFile
  */
 const initFileSelection = (processFile) => {
@@ -276,7 +332,7 @@ const initFileSelection = (processFile) => {
     e.stopPropagation();
     e.preventDefault();
 
-    const files = e.dataTransfer.files; // FileList object.
+    const files = e.dataTransfer.files;
 
     if (!files.length) {
       alert("Please, select a file.");
@@ -338,21 +394,23 @@ const processXML = (xml) => {
     { step: "B" },
   ];
 
-  const patternOccurrences = findPattern(xml, pattern);
+  const {
+    exactPatternOccurrences,
+    approximatePatternOccurrences,
+  } = findPattern(xml, pattern);
+
+  colorOsmdPatternOccurrences(osmd, exactPatternOccurrences, colors);
 
   colorOsmdPatternOccurrences(
     osmd,
-    patternOccurrences.exactPatternOccurrences,
-    colors
-  );
-
-  colorOsmdPatternOccurrences(
-    osmd,
-    patternOccurrences.approximatePatternOccurrences,
+    approximatePatternOccurrences,
     colors.map((color) => color + "55")
   );
 
-  console.log(patternOccurrences);
+  osmd.graphic.measureList[0][1].staffEntries[0].graphicalVoiceEntries[0].notes[0].sourceNote.noteheadColor =
+    colors[8];
+
+  console.log({ exactPatternOccurrences, approximatePatternOccurrences });
 };
 
 (() => {
