@@ -76,9 +76,10 @@ const getNote = (noteElement) => {
   const staff = getUniqueInteger(noteElement.getElementsByTagName("staff"));
   const voice = getUniqueInteger(noteElement.getElementsByTagName("voice"));
 
-  const sv = staffVoices[staff - 1];
-  if (sv) {
-    if (sv.length > 0 && sv.indexOf(voice) === -1) sv.push(voice);
+  const staffVoice = staffVoices[staff - 1];
+  if (staffVoice) {
+    if (staffVoice.length > 0 && staffVoice.indexOf(voice) === -1)
+      staffVoice.push(voice);
   } else {
     staffVoices[staff - 1] = [voice];
   }
@@ -120,10 +121,10 @@ const staffVoiceIsEqual = (note1, note2) =>
 const getElementIndex = (element, tagName, filterTagName, filterValue) => {
   return Array.from(element.parentElement.getElementsByTagName(tagName))
     .filter((sibling) => {
-      const siblingTags = sibling.getElementsByTagName(filterTagName);
+      const siblingTagElements = sibling.getElementsByTagName(filterTagName);
 
-      return siblingTags.length > 0
-        ? siblingTags[0].innerHTML == filterValue.toString()
+      return siblingTagElements.length > 0
+        ? siblingTagElements[0].innerHTML == filterValue.toString()
         : false;
     })
     .indexOf(element);
