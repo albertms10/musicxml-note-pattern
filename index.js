@@ -34,20 +34,6 @@
  */
 
 /**
- * Reads an XML file and calls the callback function afterwards.
- * @param {string} filename
- * @param {readXMLCallback} callback
- */
-const readXML = (filename, callback) => {
-  const xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) callback(this.responseXML);
-  };
-  xhttp.open("GET", filename, true);
-  xhttp.send();
-};
-
-/**
  * Returns the unique element of a given `HTMLCollection`.
  * @param {HTMLCollectionOf.<Element>} html
  * @returns {Element}
