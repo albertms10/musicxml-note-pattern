@@ -90,7 +90,7 @@ const getNote = (noteElement) => {
   } else {
     staffVoices[staff - 1] = [voice];
   }
-  console.log(staffVoices);
+
   staffVoices.forEach((voices) => voices.sort((a, b) => a - b));
 
   return {
@@ -244,19 +244,17 @@ const findPattern = (xml, pattern) => {
           noteIsEqual
         );
 
-        const countDifference = pattern.length - matchingCount;
-
         const result = {
           notes: patternOccurrence,
           matchingCount,
         };
 
-        if (countDifference === 0) {
+        if (pattern.length - matchingCount === 0) {
           exactPatternOccurrences.push({
             ...result,
             occurenceNumber: ++exactPatternOccurrenceCount,
           });
-        } else if (countDifference < 3) {
+        } else if (matchingCount / pattern.length > 0.6) {
           approximatePatternOccurrences.push({
             ...result,
             occurenceNumber: ++approximatePatternOccurrenceCount,
@@ -310,29 +308,32 @@ const renderMusicXML = (xml, element) => {
  * Colors a note in the given `OpenSheetMusicDisplay` object instance.
  * @param {Object} osmd `OpenSheetMusicDisplay` object instance
  * @param {Object} options
- * @param {number} [options.staff=1]
  * @param {number} [options.measure=1]
- * @param {number} [options.staffVoice=1]
+ * @param {number} [options.staff=1]
  * @param {number} [options.noteNumber=1]
+ * @param {number} [options.staffVoice=1]
  * @param {string} [options.color="#777"]
  */
 const colorOsmdNote = (
   osmd,
-  { staff = 1, measure = 1, staffVoice = 1, noteNumber = 1, color = "#777" }
+  { measure = 1, staff = 1, noteNumber = 1, staffVoice = 1, color = "#777" }
 ) => {
-  console.log({
-    staff,
-    measure,
-    staffVoice,
-    noteNumber,
-    color,
-  });
-
-  try {
+  // TODO: Refactor - Graphical voice index does not correspond to real voice.
+  //  e.g.: [o].length < [o, o].length
+  const graphicalVoiceEntriesRef =
     osmd.graphic.measureList[measure - 1][staff - 1].staffEntries[
       noteNumber - 1
-    ].graphicalVoiceEntries[
-      staffVoice - 1
+    ].graphicalVoiceEntries;
+
+  let staffVoiceNum = staffVoice - 1;
+  try {
+    while (!graphicalVoiceEntriesRef[staffVoiceNum]) {
+      if (staffVoiceNum <= 0) break;
+      staffVoiceNum--;
+    }
+
+    graphicalVoiceEntriesRef[
+      staffVoiceNum
     ].notes[0].sourceNote.noteheadColor = color;
   } catch (e) {
     console.error(e);
@@ -354,10 +355,10 @@ const colorOsmdPatternOccurrences = (
   patternOccurrences.forEach((patternOccurrence) => {
     patternOccurrence.notes.forEach((noteOccurrence) => {
       colorOsmdNote(osmd, {
-        staff: noteOccurrence.staff,
         measure: noteOccurrence.measure,
-        staffVoice: noteOccurrence.note.staffVoice,
+        staff: noteOccurrence.staff,
         noteNumber: noteOccurrence.measureNoteNumber,
+        staffVoice: noteOccurrence.note.staffVoice,
         color:
           colorsList[
             (patternOccurrence.occurenceNumber - 1) % colorsList.length
@@ -431,10 +432,7 @@ const initFileSelection = (processFile) => {
  * @param {Document} xml
  */
 const processXML = (xml) => {
-  const osmd = renderMusicXML(
-    xml,
-    document.getElementById("sheet-music-container")
-  );
+  const osmd = renderMusicXML(xml, document.getElementById("sheet-music-container"));
 
   /** @type {Pattern} */
   const pattern = [
