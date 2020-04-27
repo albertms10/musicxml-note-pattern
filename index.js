@@ -68,7 +68,7 @@ const getUniqueInteger = (html) => {
 };
 
 // FIXME: Refactor global-scoped into a local-scoped variable
-let staffVoicesNumbers = [];
+const staffVoicesNumbers = [];
 
 // TODO: Return only defined Note properties?
 /**
@@ -228,7 +228,7 @@ const findPattern = (xml, pattern) => {
     staveNotes.forEach((staffVoices) => {
       staffVoices.forEach((staffVoiceNotes) => {
         [...staffVoiceNotes].filter(isNotRest).forEach((_, noteIndex) => {
-          let patternOccurrence = [];
+          const patternOccurrence = [];
           for (
             let patternIndex = 0;
             patternIndex < pattern.length;
