@@ -5,6 +5,13 @@
  */
 
 /**
+ * Callback function that gets two parameters for evaluating equality.
+ * @callback compareCallback
+ * @param {*} value1
+ * @param {*} value2
+ */
+
+/**
  * @typedef {Object} Note
  * @property {string} step
  * @property {number} [alter]
@@ -137,6 +144,24 @@ const getElementIndex = (element, tagName, filterTagName, filterValue) => {
 const isNotRest = (noteElement) =>
   noteElement.getElementsByTagName("rest").length === 0;
 
+/**
+ * Returns the count of elements that are included in an array given a target array.
+ * @param {Array} array
+ * @param {Array} target
+ * @param {compareCallback} compareCallback
+ */
+const arrayIncludesCount = (array, target, compareCallback) => {
+  let count = 0;
+  target.every((v) => {
+    if (array.some((s) => compareCallback(v, s))) {
+      count++;
+      return true;
+    }
+    return false;
+  });
+  return count;
+};
+
 // TODO: Check MusicXML structure
 /**
  * Returns an array of matching `PatternOccurrence` for a given pattern.
@@ -199,27 +224,40 @@ const findPattern = (xml, pattern) => {
 
           if (
             (noteIsEqual(note, patternNote) &&
-            staffVoiceIsEqual(note, prevNote || note)) ||
+              staffVoiceIsEqual(note, prevNote || note)) ||
             noteIsEqual(note, prevNote)
           )
             patternOccurrence.push({
-                staff: staffCount + note.staff - 1,
-                measure: parseInt(noteRef.parentElement.getAttribute("number")),
-                measureNoteNumber:
-                  getElementIndex(noteRef, "note", "voice", note.voice) + 1,
-                note,
+              staff: staffCount + note.staff - 1,
+              measure: parseInt(noteRef.parentElement.getAttribute("number")),
+              measureNoteNumber:
+                getElementIndex(noteRef, "note", "voice", note.voice) + 1,
+              note,
             });
         }
 
-        if (patternOccurrence.length >= pattern.length) {
+        const matchingCount = arrayIncludesCount(
+          patternOccurrence.map((occ) => occ.note),
+          pattern,
+          noteIsEqual
+        );
+
+        const countDifference = pattern.length - matchingCount;
+
+        const result = {
+          notes: patternOccurrence,
+          matchingCount,
+        };
+
+        if (countDifference === 0) {
           exactPatternOccurrences.push({
+            ...result,
             occurenceNumber: ++exactPatternOccurrenceCount,
-            notes: patternOccurrence,
           });
-        } else if (patternOccurrence.length > 2) {
+        } else if (countDifference < 3) {
           approximatePatternOccurrences.push({
+            ...result,
             occurenceNumber: ++approximatePatternOccurrenceCount,
-            notes: patternOccurrence,
           });
         }
       });
