@@ -182,31 +182,34 @@ const findPattern = (xml, pattern) => {
 
     staveNotes.forEach((staffNotes) => {
       [...staffNotes].filter(isNotRest).forEach((_, noteIndex) => {
-        const patternOccurrence = pattern.reduce((
-          /** @type {NoteOccurrence[]} */ accumulator,
-          patternNote,
-          patternIndex
-        ) => {
+        let patternOccurrence = [];
+        for (
+          let patternIndex = 0;
+          patternIndex < pattern.length;
+          patternIndex++
+        ) {
+          const patternNote = pattern[patternIndex];
           const noteRef = staffNotes[noteIndex + patternIndex];
-          if (typeof noteRef === "undefined" || !isNotRest(noteRef))
-            return accumulator;
+          if (typeof noteRef === "undefined" || !isNotRest(noteRef)) continue;
 
           const note = getNote(noteRef);
-          const prevAccumulator = accumulator[accumulator.length - 1];
+          const prevAccumulator =
+            patternOccurrence[patternOccurrence.length - 1];
           const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
 
-          return (noteIsEqual(note, patternNote) &&
+          if (
+            (noteIsEqual(note, patternNote) &&
             staffVoiceIsEqual(note, prevNote || note)) ||
             noteIsEqual(note, prevNote)
-            ? accumulator.concat({
+          )
+            patternOccurrence.push({
                 staff: staffCount + note.staff - 1,
                 measure: parseInt(noteRef.parentElement.getAttribute("number")),
                 measureNoteNumber:
                   getElementIndex(noteRef, "note", "voice", note.voice) + 1,
                 note,
-              })
-            : accumulator;
-        }, []);
+            });
+        }
 
         if (patternOccurrence.length >= pattern.length) {
           exactPatternOccurrences.push({
