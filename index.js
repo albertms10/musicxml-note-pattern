@@ -67,8 +67,8 @@ const getUniqueInteger = (html) => {
   return uniqueString ? parseInt(getUniqueString(html)) : undefined;
 };
 
-// FIXME: Refactor global-scoped variable `staffVoices`
-let staffVoices = [];
+// FIXME: Refactor global-scoped into a local-scoped variable
+let staffVoicesNumbers = [];
 
 // TODO: Return only defined Note properties?
 /**
@@ -83,15 +83,15 @@ const getNote = (noteElement) => {
   const staff = getUniqueInteger(noteElement.getElementsByTagName("staff"));
   const voice = getUniqueInteger(noteElement.getElementsByTagName("voice"));
 
-  const staffVoice = staffVoices[staff - 1];
-  if (staffVoice) {
-    if (staffVoice.length > 0 && staffVoice.indexOf(voice) === -1)
-      staffVoice.push(voice);
+  const staffVoiceNumbers = staffVoicesNumbers[staff - 1];
+  if (staffVoiceNumbers) {
+    if (staffVoiceNumbers.length > 0 && staffVoiceNumbers.indexOf(voice) === -1)
+      staffVoiceNumbers.push(voice);
   } else {
-    staffVoices[staff - 1] = [voice];
+    staffVoicesNumbers[staff - 1] = [voice];
   }
 
-  staffVoices.forEach((voices) => voices.sort((a, b) => a - b));
+  staffVoicesNumbers.forEach((voices) => voices.sort((a, b) => a - b));
 
   return {
     step: getUniqueString(pitch.getElementsByTagName("step")),
@@ -99,7 +99,7 @@ const getNote = (noteElement) => {
     alter: getUniqueInteger(pitch.getElementsByTagName("alter")),
     staff: staff ? staff : 1,
     voice: voice ? voice : 1,
-    staffVoice: staffVoices[staff - 1].indexOf(voice) + 1,
+    staffVoice: staffVoicesNumbers[staff - 1].indexOf(voice) + 1,
   };
 };
 
@@ -194,72 +194,92 @@ const findPattern = (xml, pattern) => {
 
     const notes = partElement.getElementsByTagName("note");
 
-    let staveNotes = [];
+    /**
+     * Stores note elements arranged in staves and staff voices.
+     * @type {Element[][][]}
+     */
+    const staveNotes = [];
 
     if (partStaffCount > 1)
       [...notes].filter(isNotRest).forEach((noteElement) => {
         const staff = getUniqueInteger(
           noteElement.getElementsByTagName("staff")
         );
-
-        if (staveNotes[staff - 1]) staveNotes[staff - 1].push(noteElement);
-        else staveNotes[staff - 1] = [noteElement];
-      });
-    else staveNotes[0] = notes;
-
-    staveNotes.forEach((staffNotes) => {
-      [...staffNotes].filter(isNotRest).forEach((_, noteIndex) => {
-        let patternOccurrence = [];
-        for (
-          let patternIndex = 0;
-          patternIndex < pattern.length;
-          patternIndex++
-        ) {
-          const patternNote = pattern[patternIndex];
-          const noteRef = staffNotes[noteIndex + patternIndex];
-          if (typeof noteRef === "undefined" || !isNotRest(noteRef)) continue;
-
-          const note = getNote(noteRef);
-          const prevAccumulator =
-            patternOccurrence[patternOccurrence.length - 1];
-          const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
-
-          if (
-            (noteIsEqual(note, patternNote) &&
-              staffVoiceIsEqual(note, prevNote || note)) ||
-            noteIsEqual(note, prevNote)
-          )
-            patternOccurrence.push({
-              staff: staffCount + note.staff - 1,
-              measure: parseInt(noteRef.parentElement.getAttribute("number")),
-              measureNoteNumber:
-                getElementIndex(noteRef, "note", "voice", note.voice) + 1,
-              note,
-            });
-        }
-
-        const matchingCount = arrayIncludesCount(
-          patternOccurrence.map((occ) => occ.note),
-          pattern,
-          noteIsEqual
+        const voice = getUniqueInteger(
+          noteElement.getElementsByTagName("voice")
         );
 
-        const result = {
-          notes: patternOccurrence,
-          matchingCount,
-        };
+        const staffNotes = staveNotes[staff - 1];
 
-        if (pattern.length - matchingCount === 0) {
-          exactPatternOccurrences.push({
-            ...result,
-            occurenceNumber: ++exactPatternOccurrenceCount,
-          });
-        } else if (matchingCount / pattern.length > 0.6) {
-          approximatePatternOccurrences.push({
-            ...result,
-            occurenceNumber: ++approximatePatternOccurrenceCount,
-          });
+        if (staffNotes) {
+          if (staffNotes[voice - 1]) {
+            staffNotes[voice - 1].push(noteElement);
+          }
+        } else {
+          staveNotes[staff - 1] = [];
+          staveNotes[staff - 1][voice - 1] = [noteElement];
         }
+      });
+    else {
+      staveNotes[0] = [];
+      staveNotes[0][0] = [...notes];
+    }
+
+    staveNotes.forEach((staffVoices) => {
+      staffVoices.forEach((staffVoiceNotes) => {
+        [...staffVoiceNotes].filter(isNotRest).forEach((_, noteIndex) => {
+          let patternOccurrence = [];
+          for (
+            let patternIndex = 0;
+            patternIndex < pattern.length;
+            patternIndex++
+          ) {
+            const patternNote = pattern[patternIndex];
+            const noteRef = staffVoiceNotes[noteIndex + patternIndex];
+            if (typeof noteRef === "undefined" || !isNotRest(noteRef)) continue;
+
+            const note = getNote(noteRef);
+            const prevAccumulator =
+              patternOccurrence[patternOccurrence.length - 1];
+            const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
+
+            if (
+              (noteIsEqual(note, patternNote) &&
+                staffVoiceIsEqual(note, prevNote || note)) ||
+              noteIsEqual(note, prevNote)
+            )
+              patternOccurrence.push({
+                staff: staffCount + note.staff - 1,
+                measure: parseInt(noteRef.parentElement.getAttribute("number")),
+                measureNoteNumber:
+                  getElementIndex(noteRef, "note", "voice", note.voice) + 1,
+                note,
+              });
+          }
+
+          const matchingCount = arrayIncludesCount(
+            patternOccurrence.map((occ) => occ.note),
+            pattern,
+            noteIsEqual
+          );
+
+          const result = {
+            notes: patternOccurrence,
+            matchingCount,
+          };
+
+          if (pattern.length - matchingCount === 0) {
+            exactPatternOccurrences.push({
+              ...result,
+              occurenceNumber: ++exactPatternOccurrenceCount,
+            });
+          } else if (matchingCount / pattern.length > 0.6) {
+            approximatePatternOccurrences.push({
+              ...result,
+              occurenceNumber: ++approximatePatternOccurrenceCount,
+            });
+          }
+        });
       });
     });
   });
@@ -432,7 +452,10 @@ const initFileSelection = (processFile) => {
  * @param {Document} xml
  */
 const processXML = (xml) => {
-  const osmd = renderMusicXML(xml, document.getElementById("sheet-music-container"));
+  const osmd = renderMusicXML(
+    xml,
+    document.getElementById("sheet-music-container")
+  );
 
   /** @type {Pattern} */
   const pattern = [
