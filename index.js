@@ -90,6 +90,8 @@ const getNote = (noteElement) => {
   } else {
     staffVoices[staff - 1] = [voice];
   }
+  console.log(staffVoices);
+  staffVoices.forEach((voices) => voices.sort((a, b) => a - b));
 
   return {
     step: getUniqueString(pitch.getElementsByTagName("step")),
