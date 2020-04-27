@@ -5,15 +5,34 @@ body {
 }
 
 .file-drop-zone {
-  border: 2px dashed #bbb;
+  border: 2px dashed #999;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   border-radius: 5px;
-  padding: 25px;
+  padding: 1rem;
   text-align: center;
   font-size: 16pt;
-  color: #bbb;
+  color: #999;
   -moz-user-select: none;
   -webkit-user-select: none;
   user-select: none;
+  transition-property: background-color;
+  transition-duration: 200ms;
+}
+
+.file-drop-zone::before {
+  content: "+";
+  opacity: 0;
+  margin-right: 0.5rem;
+  font-size: larger;
+  transition-property: opacity;
+  transition-duration: 200ms;
+}
+
+.file-drop-zone:hover {
+  background-color: #eee;
+}
+
+.file-drop-zone:hover::before {
+  opacity: 1;
 }
