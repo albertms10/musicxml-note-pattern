@@ -12,6 +12,12 @@
  */
 
 /**
+ * @typedef {Object} Locale
+ * @property {string} lang
+ * @property {string} value
+ */
+
+/**
  * @typedef {Object} Note
  * @property {string} step
  * @property {number} [alter]
@@ -19,6 +25,7 @@
  * @property {number} [staff=1]
  * @property {number} [voice=1]
  * @property {number} [staffVoice=1]
+ * @property {Locale[]} [locales]
  */
 
 /**
@@ -38,6 +45,17 @@
  * @typedef {Object} PatternOccurrence
  * @property {number} occurenceNumber
  * @property {NoteOccurrence[]} notes
+ */
+
+/**
+ * @typedef {Object} Accidental
+ * @property {number} alter
+ * @property {string} [symbol]
+ */
+
+/**
+ * @typedef {Object} ChromaticDivision
+ * @property {Note[]} notes
  */
 
 /**
@@ -450,6 +468,207 @@ const initFileSelection = (processFile) => {
     false
   );
 };
+
+/** @type {Accidental[]} */
+const accidentals = [
+  {
+    alter: -2,
+    symbol: "𝄫",
+  },
+  {
+    alter: -1,
+    symbol: "♭",
+  },
+  {
+    alter: 1,
+    symbol: "♯",
+  },
+  {
+    alter: 2,
+    symbol: "𝄪",
+  },
+];
+
+/** @type {ChromaticDivision[]} */
+const chromaticScale = [
+  {
+    notes: [
+      {
+        step: "C",
+        locales: [
+          { lang: "de", value: "C" },
+          { lang: "it", value: "Do" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "C",
+        locales: [
+          { lang: "de", value: "Cis" },
+          { lang: "it", value: "Do♯" },
+        ],
+        alter: 1,
+      },
+      {
+        step: "D",
+        locales: [
+          { lang: "de", value: "Des" },
+          { lang: "it", value: "Re♭" },
+        ],
+        alter: -1,
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "D",
+        locales: [
+          { lang: "de", value: "D" },
+          { lang: "it", value: "Re" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "D",
+        locales: [
+          { lang: "de", value: "Dis" },
+          { lang: "it", value: "Re♯" },
+        ],
+        alter: 1,
+      },
+      {
+        step: "E",
+        locales: [
+          { lang: "de", value: "Es" },
+          { lang: "it", value: "Mi♭" },
+        ],
+        alter: -1,
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "E",
+        locales: [
+          { lang: "de", value: "E" },
+          { lang: "it", value: "Mi" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "F",
+        locales: [
+          { lang: "de", value: "F" },
+          { lang: "it", value: "Fa" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "F",
+        locales: [
+          { lang: "de", value: "Fis" },
+          { lang: "it", value: "Fa♯" },
+        ],
+        alter: 1,
+      },
+      {
+        step: "G",
+        locales: [
+          { lang: "de", value: "Ges" },
+          { lang: "it", value: "Sol♭" },
+        ],
+        alter: -1,
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "G",
+        locales: [
+          { lang: "de", value: "G" },
+          { lang: "it", value: "Sol" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "G",
+        locales: [
+          { lang: "de", value: "Gis" },
+          { lang: "it", value: "Sol♯" },
+        ],
+        alter: 1,
+      },
+      {
+        step: "A",
+        locales: [
+          { lang: "de", value: "As" },
+          { lang: "it", value: "La♭" },
+        ],
+        alter: -1,
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "A",
+        locales: [
+          { lang: "de", value: "A" },
+          { lang: "it", value: "La" },
+        ],
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "A",
+        locales: [
+          { lang: "de", value: "Ais" },
+          { lang: "it", value: "La♯" },
+        ],
+        alter: 1,
+      },
+      {
+        step: "B",
+        locales: [
+          { lang: "de", value: "B" },
+          { lang: "it", value: "Si♭" },
+        ],
+        alter: -1,
+      },
+    ],
+  },
+  {
+    notes: [
+      {
+        step: "B",
+        locales: [
+          { lang: "de", value: "H" },
+          { lang: "it", value: "Si" },
+        ],
+      },
+    ],
+  },
+];
 
 /**
  * Processes the given XML document.
