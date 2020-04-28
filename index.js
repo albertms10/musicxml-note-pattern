@@ -432,9 +432,9 @@ const initFileSelection = (processFile) => {
   /**
    * Handles a `drag` file event.
    * @param {DragEvent} e
-   * @param {readXMLCallback} callback
+   * @param {readXMLCallback} readXMLCallback
    */
-  const handleDraggedFileSelect = (e, callback) => {
+  const handleDraggedFileSelect = (e, readXMLCallback) => {
     e.stopPropagation();
     e.preventDefault();
 
@@ -455,7 +455,7 @@ const initFileSelection = (processFile) => {
           e.target.result.toString(),
           "text/xml"
         );
-        callback(document);
+        readXMLCallback(document);
       }
     };
 
