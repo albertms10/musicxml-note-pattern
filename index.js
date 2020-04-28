@@ -157,7 +157,7 @@ const getElementIndex = (element, tagName, filterTagName, filterValue) =>
       const siblingTagElements = sibling.getElementsByTagName(filterTagName);
 
       return siblingTagElements.length > 0
-        ? siblingTagElements[0].innerHTML == filterValue.toString()
+        ? siblingTagElements[0].innerHTML === filterValue.toString()
         : false;
     })
     .indexOf(element);
@@ -449,7 +449,7 @@ const initFileSelection = (processFile) => {
     const reader = new FileReader();
 
     reader.onloadend = (e) => {
-      if (e.target.readyState == FileReader.DONE) {
+      if (e.target.readyState === FileReader.DONE) {
         const parser = new DOMParser();
         const document = parser.parseFromString(
           e.target.result.toString(),
