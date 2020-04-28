@@ -99,15 +99,23 @@ const getNote = (noteElement, staffVoicesNumbers) => {
   const staff = getUniqueInteger(noteElement.getElementsByTagName("staff"));
   const voice = getUniqueInteger(noteElement.getElementsByTagName("voice"));
 
+  let changed = false;
   const staffVoiceNumbers = staffVoicesNumbers[staff - 1];
   if (staffVoiceNumbers) {
-    if (staffVoiceNumbers.length > 0 && staffVoiceNumbers.indexOf(voice) === -1)
+    if (
+      staffVoiceNumbers.length > 0 &&
+      staffVoiceNumbers.indexOf(voice) === -1
+    ) {
       staffVoiceNumbers.push(voice);
+      changed = true;
+    }
   } else {
     staffVoicesNumbers[staff - 1] = [voice];
+    changed = true;
   }
 
-  staffVoicesNumbers.forEach((voices) => voices.sort((a, b) => a - b));
+  if (changed)
+    staffVoicesNumbers.forEach((voices) => voices.sort((a, b) => a - b));
 
   return {
     step: getUniqueString(pitch.getElementsByTagName("step")),
@@ -248,59 +256,65 @@ const findPattern = (xml, pattern) => {
 
     staveNotes.forEach((staffVoices) => {
       staffVoices.forEach((staffVoiceNotes) => {
-        [...staffVoiceNotes].filter(isNotRest).forEach((_, noteIndex, staffVoiceNotes) => {
-          const patternOccurrence = [];
-          for (
-            let patternIndex = 0;
-            patternIndex < pattern.length;
-            patternIndex++
-          ) {
-            const patternNote = pattern[patternIndex];
-            const noteRef = staffVoiceNotes[noteIndex + patternIndex];
-            if (typeof noteRef === "undefined" || !isNotRest(noteRef)) break;
+        [...staffVoiceNotes]
+          .filter(isNotRest)
+          .forEach((_, noteIndex, staffVoiceNotes) => {
+            const patternOccurrence = [];
+            for (
+              let patternIndex = 0;
+              patternIndex < pattern.length;
+              patternIndex++
+            ) {
+              const patternNote = pattern[patternIndex];
+              const noteRef = staffVoiceNotes[noteIndex + patternIndex];
+              if (typeof noteRef === "undefined" || !isNotRest(noteRef)) break;
 
-            const note = getNote(noteRef, staffVoicesNumbers);
-            const prevAccumulator =
-              patternOccurrence[patternOccurrence.length - 1];
-            const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
+              const note = getNote(noteRef, staffVoicesNumbers);
+              const prevAccumulator =
+                patternOccurrence[patternOccurrence.length - 1];
+              const prevNote = prevAccumulator
+                ? prevAccumulator.note
+                : undefined;
 
-            if (
-              (noteIsEqual(note, patternNote) &&
-                staffVoiceIsEqual(note, prevNote || note)) ||
-              noteIsEqual(note, prevNote)
-            )
-              patternOccurrence.push({
-                staff: staffCount + note.staff - 1,
-                measure: parseInt(noteRef.parentElement.getAttribute("number")),
-                measureNoteNumber:
-                  getElementIndex(noteRef, "note", "voice", note.voice) + 1,
-                note,
+              if (
+                (noteIsEqual(note, patternNote) &&
+                  staffVoiceIsEqual(note, prevNote || note)) ||
+                noteIsEqual(note, prevNote)
+              )
+                patternOccurrence.push({
+                  staff: staffCount + note.staff - 1,
+                  measure: parseInt(
+                    noteRef.parentElement.getAttribute("number")
+                  ),
+                  measureNoteNumber:
+                    getElementIndex(noteRef, "note", "voice", note.voice) + 1,
+                  note,
+                });
+            }
+
+            const matchingCount = arrayIncludesCount(
+              patternOccurrence.map((occ) => occ.note),
+              pattern,
+              noteIsEqual
+            );
+
+            const result = {
+              notes: patternOccurrence,
+              matchingCount,
+            };
+
+            if (pattern.length - matchingCount === 0) {
+              exactPatternOccurrences.push({
+                ...result,
+                occurenceNumber: ++exactPatternOccurrenceCount,
               });
-          }
-
-          const matchingCount = arrayIncludesCount(
-            patternOccurrence.map((occ) => occ.note),
-            pattern,
-            noteIsEqual
-          );
-
-          const result = {
-            notes: patternOccurrence,
-            matchingCount,
-          };
-
-          if (pattern.length - matchingCount === 0) {
-            exactPatternOccurrences.push({
-              ...result,
-              occurenceNumber: ++exactPatternOccurrenceCount,
-            });
-          } else if (matchingCount / pattern.length > 0.6) {
-            approximatePatternOccurrences.push({
-              ...result,
-              occurenceNumber: ++approximatePatternOccurrenceCount,
-            });
-          }
-        });
+            } else if (matchingCount / pattern.length > 0.6) {
+              approximatePatternOccurrences.push({
+                ...result,
+                occurenceNumber: ++approximatePatternOccurrenceCount,
+              });
+            }
+          });
       });
     });
   });
