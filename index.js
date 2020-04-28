@@ -143,8 +143,8 @@ const staffVoiceIsEqual = (note1, note2) =>
  * @param {string} filterTagName
  * @param {*} filterValue
  */
-const getElementIndex = (element, tagName, filterTagName, filterValue) => {
-  return Array.from(element.parentElement.getElementsByTagName(tagName))
+const getElementIndex = (element, tagName, filterTagName, filterValue) =>
+  Array.from(element.parentElement.getElementsByTagName(tagName))
     .filter((sibling) => {
       const siblingTagElements = sibling.getElementsByTagName(filterTagName);
 
@@ -153,7 +153,6 @@ const getElementIndex = (element, tagName, filterTagName, filterValue) => {
         : false;
     })
     .indexOf(element);
-};
 
 /**
  * Returns `true` if the given note element is not a rest.
