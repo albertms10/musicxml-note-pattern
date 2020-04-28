@@ -248,7 +248,7 @@ const findPattern = (xml, pattern) => {
 
     staveNotes.forEach((staffVoices) => {
       staffVoices.forEach((staffVoiceNotes) => {
-        [...staffVoiceNotes].filter(isNotRest).forEach((_, noteIndex) => {
+        [...staffVoiceNotes].filter(isNotRest).forEach((_, noteIndex, staffVoiceNotes) => {
           const patternOccurrence = [];
           for (
             let patternIndex = 0;
@@ -257,7 +257,7 @@ const findPattern = (xml, pattern) => {
           ) {
             const patternNote = pattern[patternIndex];
             const noteRef = staffVoiceNotes[noteIndex + patternIndex];
-            if (typeof noteRef === "undefined" || !isNotRest(noteRef)) continue;
+            if (typeof noteRef === "undefined" || !isNotRest(noteRef)) break;
 
             const note = getNote(noteRef, staffVoicesNumbers);
             const prevAccumulator =
