@@ -67,16 +67,14 @@ const getUniqueInteger = (html) => {
   return uniqueString ? parseInt(getUniqueString(html)) : undefined;
 };
 
-// FIXME: Refactor global-scoped into a local-scoped variable
-const staffVoicesNumbers = [];
-
 // TODO: Return only defined Note properties?
 /**
  * Returns a `Note` object from a given `Element`.
  * @param {Element} noteElement
+ * @param {number[][]} staffVoicesNumbers
  * @returns {Note}
  */
-const getNote = (noteElement) => {
+const getNote = (noteElement, staffVoicesNumbers) => {
   /** @type {Element} */
   const pitch = getUniqueElement(noteElement.getElementsByTagName("pitch"));
 
@@ -195,10 +193,16 @@ const findPattern = (xml, pattern) => {
     const notes = partElement.getElementsByTagName("note");
 
     /**
-     * Stores note elements arranged in staves and staff voices.
+     * Stores note elements arranged by staves and staff voices.
      * @type {Element[][][]}
      */
     const staveNotes = [];
+
+    /**
+     * Stores voice numbers arranged by staves.
+     * @type {number[][]}
+     */
+    const staffVoicesNumbers = [];
 
     if (partStaffCount > 1)
       [...notes].filter(isNotRest).forEach((noteElement) => {
@@ -238,7 +242,7 @@ const findPattern = (xml, pattern) => {
             const noteRef = staffVoiceNotes[noteIndex + patternIndex];
             if (typeof noteRef === "undefined" || !isNotRest(noteRef)) continue;
 
-            const note = getNote(noteRef);
+            const note = getNote(noteRef, staffVoicesNumbers);
             const prevAccumulator =
               patternOccurrence[patternOccurrence.length - 1];
             const prevNote = prevAccumulator ? prevAccumulator.note : undefined;
